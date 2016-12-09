@@ -14,6 +14,7 @@ import java.lang.reflect.Method;
 public final class L {
     private static final String APPLICATION_TAG = "MyApplication"; // Change this in accordance to your app's name
     private static boolean active = true;
+    private static boolean verbose = true; //
 
     /** You are not to create any instances from utils.L class*/
     private L () {
@@ -55,63 +56,60 @@ public final class L {
 
 
     private static void print(String str) {
-        int depth = 3; // 4 = Takes the method which called this class's log function, change this if you know what you're doing
-        StackTraceElement[] ste = Thread.currentThread().getStackTrace();
-        StackTraceElement current = ste[depth];
+        if (isActive()) {
+            int depth = 3; // 4 = Takes the method which called this class's log function, change this if you know what you're doing
+            StackTraceElement[] ste = Thread.currentThread().getStackTrace();
+            StackTraceElement current = ste[depth];
 
-        int lineNumber = current.getLineNumber();
-        String className = keepEndToFirstDot(current.getClassName());
-        String methodName = current.getMethodName();
+            int lineNumber = current.getLineNumber();
+            String className = keepEndToFirstDot(current.getClassName());
+            String methodName = current.getMethodName();
 
-        Class<?> callingClass;
-        String parameters = "";
-        try {
-            callingClass = Class.forName(current.getClassName());
+            Class<?> callingClass;
+            StringBuilder parameters = new StringBuilder();
+            try {
+                callingClass = Class.forName(current.getClassName());
 
-            Method[] methods = callingClass.getMethods();
-            Method calledMethod = null;
-            for (Method i : methods) {
-                if (i.getName().equals(methodName)){
-                    calledMethod = i;
-                    break;
+                Method[] methods = callingClass.getMethods();
+                Method calledMethod = null;
+                for (Method i : methods) {
+                    if (i.getName().equals(methodName)){
+                        calledMethod = i;
+                        break;
+                    }
                 }
-            }
-            if (calledMethod != null) {
-                Class<?> [] parameterTypes = calledMethod.getParameterTypes();
-                for (int i = 0; i < parameterTypes.length; i++) {
-                    parameters = parameters + parameterTypes[i].getSimpleName();
-                    if (i == parameterTypes.length-1){
-                        parameters = parameters + "";
-                    } else {
-                        parameters = parameters + ", ";
+                if (calledMethod != null) {
+                    Class<?> [] parameterTypes = calledMethod.getParameterTypes();
+                    for (int i = 0; i < parameterTypes.length; i++) {
+                        parameters.append(parameterTypes[i].getSimpleName());
+                        if (i != parameterTypes.length-1){
+                            parameters.append(", ");
+                        }
                     }
                 }
 
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
 
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-
-
-        if (isActive()) { // Will only print if active is set to true
-            String message = "[Thread: " + Thread.currentThread().getName() + "]: [" + APPLICATION_TAG +
-                    "] (@" + lineNumber + ") " + className + ": " + methodName + "(" + parameters + ")";
             if (str != null) {
-                System.out.println(message + ": " + str);
+                System.out.println("[Thread: " + Thread.currentThread().getName() + "]: [" + APPLICATION_TAG +
+                        "] (@" + lineNumber + ") " + className + ": " + methodName + "(" + parameters.toString() + ")" + ": " + str);
             } else {
-                System.out.println(message);
+                System.out.println("[Thread: " + Thread.currentThread().getName() + "]: [" + APPLICATION_TAG +
+                        "] (@" + lineNumber + ") " + className + ": " + methodName + "(" + parameters.toString() + ")");
             }
         }
     }
 
     private static String keepEndToFirstDot(String str) {
+        StringBuilder result = new StringBuilder();
         for (int i = str.length()-1; i >= 0; i--) {
             if (str.charAt(i) == '.') {
-                str = str.substring(i+1);
+                result.append(str.substring(i+1));
                 break;
             }
         }
-        return str;
+        return result.toString();
     }
 }
